@@ -46,6 +46,11 @@
             //<p><span style = "color:firebrick" > There are @results.Count() for the selection in the category list.</span></p>
             // passing data to another page
             //data passed this way is done via the html GetHtml()
+            //      pagename.ext?label=value&label2=value2.....
+            // pagename.ext is the page
+            // ? indicates the paremeter(s) to follow
+            // parameter: label=value
+            // & seperates multiple parameters
             Response.Redirect("WebGridDemo.cshtml?cid=" + categoryselection);
         }
     }
@@ -68,15 +73,14 @@ else
                 @foreach (var item in ddlResults)
                 {
                     //hold to retain the current selection inside a ddl
-                    if (true)
+                    if (item.CategoryID.ToString() == categoryselection)
                     {
                         <option value="@item.CategoryID" selected>@item.CategoryName</option>
                     }
                     else
                     {
-                        <option value="@item.CategoryID" selected>@item.CategoryName</option>
-                    }
-                    <option value="item.CategoryID">@item.CategoryName</option>
+                        <option value="@item.CategoryID" >@item.CategoryName</option>
+                    }                   
                 }
             </select> &nbsp;&nbsp;
             <button type="submit" name="theButton" id="theButton" value="submit" class="btn btn-primary">Search</button>
