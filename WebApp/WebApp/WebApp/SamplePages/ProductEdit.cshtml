@@ -1,107 +1,122 @@
 ﻿@{
-    Page.Title = "Product Edit";
-    Layout = "~/_Layout.cshtml";
+        Page.Title = "Product Edit";
+        Layout = "~/_Layout.cshtml";
 
 
-    var pid = Request.QueryString["pid"];
-    if (pid.IsEmpty())
-    {
-        Response.Redirect("ProductSearch.cshtml");
-    }
-    var productid = Request.Form["ProductID"];
-    var productname = Request.Form["ProductName"];
-    var supplierid = Request.Form["SupplierList"];
-    var categoryid = Request.Form["CategoryList"];
-    var quantityperunit = Request.Form["QuantityPerUnit"];
-    var unitprice = Request.Form["UnitPrice"];
-    var unitsinstock = Request.Form["UnitsInStock"];
-    var unitsonorder = Request.Form["UnitsOnOrder"];
-    var reorderlevel = Request.Form["ReorderLevel"];
-    var discontinued = Request.Form["Discontinued"];
-    //capture which button was pressed
-    var thebutton = Request.Form["theButton"];
-
-    if (IsPost)
-    {
-        //discontinued is a checkbox
-        //the possible values from the check box is null (not checked) or "on" (checked)
-        //the acceptable sql values for a bit are 0 and 1
-        if (discontinued == null)
+        var pid = Request.QueryString["pid"];
+        if (pid.IsEmpty())
         {
-            discontinued = "0";
+            Response.Redirect("ProductSearch.cshtml");
+        }
+        var productid = Request.Form["ProductID"];
+        var productname = Request.Form["ProductName"];
+        var supplierid = Request.Form["SupplierList"];
+        var categoryid = Request.Form["CategoryList"];
+        var quantityperunit = Request.Form["QuantityPerUnit"];
+        var unitprice = Request.Form["UnitPrice"];
+        var unitsinstock = Request.Form["UnitsInStock"];
+        var unitsonorder = Request.Form["UnitsOnOrder"];
+        var reorderlevel = Request.Form["ReorderLevel"];
+        var discontinued = Request.Form["Discontinued"];
+        //capture which button was pressed
+        var thebutton = Request.Form["theButton"];
+
+        if (IsPost)
+        {
+            //discontinued is a checkbox
+            //the possible values from the check box is null (not checked) or "on" (checked)
+            //the acceptable sql values for a bit are 0 and 1
+            if (discontinued == null)
+            {
+                discontinued = "0";
+            }
+            else
+            {
+                discontinued = "1";
+            }
         }
         else
         {
-            discontinued = "1";
+            //validating the passed value 
+            int npid = 0;
+            if (int.TryParse(pid, out npid))
+            {
+                productid = npid.ToString();
+            }
+            else
+            {
+                productid = "0";
+            }
+            discontinued = "0";
         }
+        var db = Database.Open("NWDB");
+        var supplierStatement = "SELECT SupplierID, CompanyName "
+                           + "FROM Suppliers "
+                           + "ORDER BY CompanyName";
+        var querySuppliers = db.Query(supplierStatement);
+        var categoryStatement = "SELECT CategoryID, CategoryName "
+                           + "FROM Categories "
+                           + "ORDER BY CategoryName";
+        var queryCategories = db.Query(categoryStatement);
+        var queryStatement = "SELECT ProductID, ProductName, SupplierID, CategoryID, QuantityPerUnit, UnitPrice, UnitsInStock, UnitsOnOrder, ReorderLevel, Discontinued "
+                            + "FROM Products "
+                            + "WHERE ProductID = @0";
+        //queryProducts needs to be a datatype of a returned record from the database
+        //it is also global
+        //var obtains its datatype on its first use in your program
+        var queryProducts = db.QuerySingle(queryStatement, productid);
     }
-    else
-    {
-        productid = pid;
-        discontinued = "0";
-    }
-    var db = Database.Open("NWDB");
-    var supplierStatement = "SELECT SupplierID, CompanyName "
-                       + "FROM Suppliers "
-                       + "ORDER BY CompanyName";
-    var querySuppliers = db.Query(supplierStatement);
-    var categoryStatement = "SELECT CategoryID, CategoryName "
-                       + "FROM Categories "
-                       + "ORDER BY CategoryName";
-    var queryCategories = db.Query(categoryStatement);
-    var queryStatement = "SELECT ProductID, ProductName, SupplierID, CategoryID, QuantityPerUnit, UnitPrice, UnitsInStock, UnitsOnOrder, ReorderLevel, Discontinued "
-                        + "FROM Products "
-                        + "WHERE ProductID = @0";
-    var queryProducts = db.QuerySingle(queryStatement, pid);
-}
 
 
 
-@section banner{
+    @section banner{
     <h1>Product Edit - Update and Delete</h1>
 }
-@if (IsPost)
-{
-    if (thebutton.Equals("cancel"))
+    @if (IsPost)
     {
-        // a) could redirect to the search page
-        // b) reset the web controls to the current database record and display an appriopriate message
-        // c) empty the web controls and display an appropriate message
+        if (thebutton.Equals("cancel"))
+        {
+            // a) could redirect to the search page
+            // b) reset the web controls to the current database record and display an appriopriate message
+            // c) empty the web controls and display an appropriate message
 
-        productid = "";
-        productname = "";
-        supplierid = "0";
-        categoryid = "";
-        quantityperunit = "";
-        unitprice = "";
-        unitsinstock = "";
-        unitsonorder = "";
-        reorderlevel = "";
-        discontinued = "";
+            productid = "";
+            productname = "";
+            supplierid = "0";
+            categoryid = "";
+            quantityperunit = "";
+            unitprice = "";
+            unitsinstock = "";
+            unitsonorder = "";
+            reorderlevel = "";
+            discontinued = "";
         <p>
             <span style="color:firebrick;">You cancelled the operation. Return to search for another product</span>
             <a href="~/SamplePages/ProductSearch.cshtml">Go to Search</a>
         </p>
 
+
     }
-    else if (thebutton.Equals("delete"))
-    {
-        if (string.IsNullOrEmpty(productid))
+        else if (thebutton.Equals("delete"))
         {
+            if (string.IsNullOrEmpty(productid))
+            {
             <p>
                 <span style="color:firebrick;">No product selected. Return to search for another product</span>
                 <a href="~/SamplePages/ProductSearch.cshtml">Go to Search</a>
             </p>
-        }
-        else
-        {
-            try
+            }
+            else
             {
-                //connect to database
-                //done above: no code necessary
+                try
+                {
+                    //connect to database
+                    //done above: no code necessary
 
-                //command
-                //scenario1 physical removal of the record
+                    //command
+                    //there are 2 scenarios to handle a delete
+                    //scenario1 physical removal of the record
+                    //Physically delete the record and check to make sure it is deleted
                 @*var deletecommand = @"DELETE Products
                                           WHERE ProductID = @0";
                     //execution
@@ -125,6 +140,7 @@
                         productid = "";
                     }*@
                 //scenario2 logical removal of the record
+                //set a flag that might be on the record that will consider the record to be LOGICALLY deleted
                 var deletecommand = @"UPDATE Products
                           SET Discontinued = 1
                           WHERE ProductID = @0";
@@ -321,7 +337,7 @@ else //for IsPost
         <div class="row">
             <div class="col-sm-12 text-center">
                 <button type="submit" name="theButton" id="theUpdate" class="btn btn-primary" value="update">Update</button>&nbsp;&nbsp;&nbsp;
-                <button type="submit" name="theButton" id="theDelete" class="btn btn-primary" value="delete">Delete</button>&nbsp;&nbsp;&nbsp;
+                <button type="submit" name="theButton" id="theDelete" class="btn btn-primary" value="delete" onclick="return confirm('Are you sure you wish to discontinue this product?')">Discontinue</button>&nbsp;&nbsp;&nbsp;
                 <button type="submit" name="theButton" id="theCancel" class="btn btn-primary" value="cancel">Cancel</button>
             </div>
         </div>
